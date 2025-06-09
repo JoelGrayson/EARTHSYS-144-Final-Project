@@ -1,0 +1,16 @@
+{
+  "name": "node-analysis-part-2",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Joel Grayson <joel@joelgrayson.com> (https://github.com/JoelGrayson)",
+  "license": "MIT",
+  "description": "",
+  "dependencies": {
+    "@turf/boolean-point-in-polygon": "^7.2.0",
+    "@turf/turf": "^7.2.0"
+  }
+}
