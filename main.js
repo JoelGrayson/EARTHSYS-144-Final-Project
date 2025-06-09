@@ -42,7 +42,6 @@ const boolean_point_in_polygon_1 = require("@turf/boolean-point-in-polygon");
 const fileData = JSON.parse(fs_1.default.readFileSync('buffered_places_of_interest.geojson', 'utf8'));
 // Places of interest
 const pois = fileData.features.map((f) => {
-    console.log('f', f);
     return {
         fid: f.properties.fid,
         name: f.properties.Name,
@@ -66,21 +65,31 @@ const points = fs_1.default //visited points
 });
 // console.log(points);
 // console.log(poi);
-const output = [];
-points.forEach(point => {
+/* Pseudocode:
+let pointsWithPoiIds = for every point, determine its poiId as either null for not in any place or the id of the place it's in
+Let durations = loop over pointWithPoiId with the variables curr and prev for each loop and the outer variable currDurationStartDate. If curr and prev have a different poiIds, append to durations with the start and end times and duration and prev's poi information.
+Then, go through all the durations and purge those under 5 minutes in duration.
+*/
+let turfPointForType = turf.point([0, 0]);
+const pointsWithPoiIds = [];
+const durations = [];
+for (let i = 0; i < points.length; i++) {
+    const point = points[i];
     const turfPoint = turf.point([point.longitude, point.latitude]);
+    let thePoiItsIn = null;
     for (const poi of pois) {
-        if ((0, boolean_point_in_polygon_1.booleanPointInPolygon)(turfPoint, poi.turfPolygon)) {
-            output.push({
-                enteredAt: point.timestamp,
-                placeOfInterestId: poi.fid,
-                placeOfInterestFacilityType: poi.facilityType,
-                placeOfInterestName: poi.name
-            });
+        if ((0, boolean_point_in_polygon_1.booleanPointInPolygon)(turfPoint, poi.turfPolygon)) { //point is inside a poi
+            thePoiItsIn = poi;
         }
     }
-});
-console.log(points, output);
-console.log(points.length);
-console.log(output.length);
+    pointsWithPoiIds.push({
+        point,
+        poi: thePoiItsIn,
+        turfPoint
+    });
+}
+console.log(pointsWithPoiIds);
+// console.log(points, output);
+// console.log(points.length);
+// console.log(output.length);
 // console.log(pois)

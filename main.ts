@@ -13,7 +13,6 @@ const pois: {
     facilityType: string;
     turfPolygon: any;
 }[]=fileData.features.map((f: any)=>{
-    console.log('f', f);
     return {
         fid: f.properties.fid,
         name: f.properties.Name,
@@ -42,48 +41,66 @@ const points=fs //visited points
 // console.log(poi);
 
 /* Pseudocode:
-let pointsWithPoiIds = for every point, determine its poiId as either null for not in any place or the id of the place it's in
-Let durations = loop over pointWithPoiId with the variables curr and prev for each loop and the outer variable currDurationStartDate. If curr and prev have a different poiIds, append to durations with the start and end times and duration and prev's poi information.
-Then, go through all the durations and purge those under 5 minutes in duration.
+1. let pointsWithPoiIds = for every point, determine its poiId as either null for not in any place or the id of the place it's in
+2. let durations = loop over pointWithPoiId with the variables curr and prev for each loop and the outer variable currDurationStartDate. If curr and prev have a different poiIds, append to durations with the start and end times and duration and prev's poi information.
+3. Go through all the durations and purge those under 5 minutes in duration.
 */
 
-
-const durations=[] as { enteredAt: Date; exitedAt?: Date; durationInSeconds?: number; placeOfInterestId: string; placeOfInterestName: string; placeOfInterestFacilityType: string }[];
+// Part 1 of pseudocode
+let turfPointForType=turf.point([0, 0]);
+type PoiT=typeof pois[number];
+type PointT=typeof points[number];
+type TurfPointT=typeof turfPointForType;
+const pointsWithPoiIds=[] as { poi: PoiT | null; point: PointT, turfPoint: TurfPointT }[];
+const durations=[] as { enteredAt: Date; exitedAt?: Date; durationInSeconds?: number; poi: PoiT | null }[];
 
 for (let i=0; i<points.length; i++) {
-    const point=points[i];
-    const pPoint=points[Math.max(i-1, 0)]; //previous point
-    
+    const point=points[i];    
     const turfPoint=turf.point([point.longitude, point.latitude]);
 
-    let thePoiItsIn: typeof pois[number];
+    let thePoiItsIn: typeof pois[number] | null = null;
     for (const poi of pois) {
         if (booleanPointInPolygon(turfPoint, poi.turfPolygon)) { //point is inside a poi
             thePoiItsIn=poi;
         }
     }
 
-    let shouldAdd=false;
-
-    const latestPoi=durations.at(-1);
-    if (!latestPoi)
-        shouldAdd=true;
-    if (latestPoi?.placeOfInterestId!==poi.fid) { //moved to a different place
-        latestPoi?.exitedAt=point.timestamp;
-        
-    }
-    
-    
-    durations.push({
-        enteredAt: point.timestamp,
-        placeOfInterestId: poi.fid,
-        placeOfInterestFacilityType: poi.facilityType,
-        placeOfInterestName: poi.name
+    pointsWithPoiIds.push({
+        point,
+        poi: thePoiItsIn,
+        turfPoint
     });
 }
+
+console.log(pointsWithPoiIds);
 
 // console.log(points, output);
 // console.log(points.length);
 // console.log(output.length);
 // console.log(pois)
+
+
+// Part 2 of pseudocode
+let currDurationStartDate=null;
+for (let i=1; i<pointsWithPoiIds.length; i++) {
+    const prev=pointsWithPoiIds[i-1];
+    const curr=pointsWithPoiIds[i];
+
+    if (curr.poi!==prev.poi) {
+        if (curr.poi!==null) { //entering a place
+            currDurationStartDate=curr.point.timestamp;
+        } else { //leaving a place
+            const enteredAt=currDurationStartDate ?? curr.point.timestamp;
+            const exitedAt=curr.point.timestamp;
+
+            durations.push({
+                enteredAt,
+                exitedAt,
+                durationInSeconds: (exitedAt.getTime()-enteredAt.getTime())/1000,
+                poi: prev.poi
+            });
+        }
+    }
+    pointWithPoid.point.timestamp
+}
 
