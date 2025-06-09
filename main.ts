@@ -41,21 +41,46 @@ const points=fs //visited points
 // console.log(points);
 // console.log(poi);
 
-const output=[] as { enteredAt: Date; exitedAt?: Date; durationInSeconds?: number; placeOfInterestId: string; placeOfInterestName: string; placeOfInterestFacilityType: string }[];
+/* Pseudocode:
+let pointsWithPoiIds = for every point, determine its poiId as either null for not in any place or the id of the place it's in
+Let durations = loop over pointWithPoiId with the variables curr and prev for each loop and the outer variable currDurationStartDate. If curr and prev have a different poiIds, append to durations with the start and end times and duration and prev's poi information.
+Then, go through all the durations and purge those under 5 minutes in duration.
+*/
 
-points.forEach(point=>{
+
+const durations=[] as { enteredAt: Date; exitedAt?: Date; durationInSeconds?: number; placeOfInterestId: string; placeOfInterestName: string; placeOfInterestFacilityType: string }[];
+
+for (let i=0; i<points.length; i++) {
+    const point=points[i];
+    const pPoint=points[Math.max(i-1, 0)]; //previous point
+    
     const turfPoint=turf.point([point.longitude, point.latitude]);
+
+    let thePoiItsIn: typeof pois[number];
     for (const poi of pois) {
-        if (booleanPointInPolygon(turfPoint, poi.turfPolygon)) {
-            output.push({
-                enteredAt: point.timestamp,
-                placeOfInterestId: poi.fid,
-                placeOfInterestFacilityType: poi.facilityType,
-                placeOfInterestName: poi.name
-            });
+        if (booleanPointInPolygon(turfPoint, poi.turfPolygon)) { //point is inside a poi
+            thePoiItsIn=poi;
         }
     }
-})
+
+    let shouldAdd=false;
+
+    const latestPoi=durations.at(-1);
+    if (!latestPoi)
+        shouldAdd=true;
+    if (latestPoi?.placeOfInterestId!==poi.fid) { //moved to a different place
+        latestPoi?.exitedAt=point.timestamp;
+        
+    }
+    
+    
+    durations.push({
+        enteredAt: point.timestamp,
+        placeOfInterestId: poi.fid,
+        placeOfInterestFacilityType: poi.facilityType,
+        placeOfInterestName: poi.name
+    });
+}
 
 // console.log(points, output);
 // console.log(points.length);
